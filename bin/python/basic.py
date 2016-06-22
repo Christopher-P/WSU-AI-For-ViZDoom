@@ -82,7 +82,7 @@ game.set_sound_enabled(True)
 game.set_living_reward(-1)
 
 # Sets ViZDoom mode (PLAYER, ASYNC_PLAYER, SPECTATOR, ASYNC_SPECTATOR, PLAYER mode is default)
-game.set_mode(Mode.PLAYER)
+#game.set_mode(Mode.PLAYER)
 
 # Initialize the game. Further configuration won't take any effect from now on.
 game.init()

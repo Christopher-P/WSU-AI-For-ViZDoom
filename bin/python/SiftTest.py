@@ -8,33 +8,24 @@ img1 = cv2.imread('box.png',0)          # queryImage
 img2 = cv2.imread('box_in_scene.png',0) # trainImage
 
 # Initiate SIFT detector
-orb = cv2.ORB_create()
+sift = cv2.xfeatures2d.SIFT_create()
 
 # find the keypoints and descriptors with SIFT
-kp1, des1 = orb.detectAndCompute(img1,None)
-kp2, des2 = orb.detectAndCompute(img2,None)
+kp1, des1 = sift.detectAndCompute(img1,None)
+kp2, des2 = sift.detectAndCompute(img2,None)
 
-#FLANN_INDEX_KDTREE = 0
-#index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-#search_params = dict(checks = 50)
+FLANN_INDEX_KDTREE = 0
+index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+search_params = dict(checks = 50)
 
-#flann = cv2.FlannBasedMatcher(index_params, search_params)
+flann = cv2.FlannBasedMatcher(index_params, search_params)
 
-#matches = flann.knnMatch(des1,des2,k=2)
-
-# create BFMatcher object
-bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-# Match descriptors.
-matches = bf.match(des1,des2)
-
-# Sort them in the order of their distance.
-matches = sorted(matches, key = lambda x:x.distance)
+matches = flann.knnMatch(des1,des2,k=2)
 
 # store all the good matches as per Lowe's ratio test.
 good = []
-for m in matches:
-    if m.distance < 0.7:
+for m,n in matches:
+    if m.distance < 0.7*n.distance:
         good.append(m)
 		
 if len(good)>MIN_MATCH_COUNT:
@@ -48,13 +39,11 @@ if len(good)>MIN_MATCH_COUNT:
     pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
     dst = cv2.perspectiveTransform(pts,M)
 
-    img2 = cv2.polylines(img2,[np.int32(dst)],True,0,3, cv2.LINE_AA)
+    img2 = cv2.polylines(img2,[np.int32(dst)],True,255,3, cv2.LINE_AA)
 
 else:
     print "Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT)
     matchesMask = None
-
-print "Matches Found: - %d/%d" % (len(good),MIN_MATCH_COUNT)
 	
 draw_params = dict(matchColor = (0,255,0), # draw matches in green color
                    singlePointColor = None,
