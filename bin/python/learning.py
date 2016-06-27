@@ -47,7 +47,7 @@ episodes_to_watch = 10
 
 # Where to save and load network's weights.
 params_savefile = "basic_params"
-params_loadfile = None
+params_loadfile = "basic_params"
 
 # Function for converting images
 def convert(img):
@@ -201,71 +201,71 @@ def perform_learning_step():
     return loss
 
 
-print "Starting the training!"
+#print "Starting the training!"
 
-steps = 0
-for epoch in range(epochs):
-    print "\nEpoch", epoch
-    train_time = 0
-    train_episodes_finished = 0
-    train_loss = []
-    train_rewards = []
+#steps = 0
+#for epoch in range(epochs):
+#    print "\nEpoch", epoch
+#    train_time = 0
+#    train_episodes_finished = 0
+#    train_loss = []
+#    train_rewards = []
 
-    train_start = time()
-    print "\nTraining ..."
-    game.new_episode()
-    for learning_step in tqdm(range(training_steps_per_epoch)):
-        # Learning and action is here.
-        train_loss.append(perform_learning_step())
-        # I
-        if game.is_episode_finished():
-            r = game.get_total_reward()
-            train_rewards.append(r)
-            game.new_episode()
-            train_episodes_finished += 1
+ #   train_start = time()
+#    print "\nTraining ..."
+#    game.new_episode()
+#    for learning_step in tqdm(range(training_steps_per_epoch)):
+#        # Learning and action is here.
+#        train_loss.append(perform_learning_step())
+#        # I
+#        if game.is_episode_finished():
+#            r = game.get_total_reward()
+#            train_rewards.append(r)
+ #           game.new_episode()
+  #          train_episodes_finished += 1
 
-        steps += 1
-        if steps > static_epsilon_steps:
-            epsilon = max(end_epsilon, epsilon - epsilon_decay_stride)
+#        steps += 1
+#        if steps > static_epsilon_steps:
+#            epsilon = max(end_epsilon, epsilon - epsilon_decay_stride)
 
-    train_end = time()
-    train_time = train_end - train_start
-    mean_loss = np.mean(train_loss)
+#    train_end = time()
+#    train_time = train_end - train_start
+#    mean_loss = np.mean(train_loss)
 
-    print train_episodes_finished, "training episodes played."
+ #   print train_episodes_finished, "training episodes played."
     print "Training results:"
 
-    train_rewards = np.array(train_rewards)
+  #  train_rewards = np.array(train_rewards)
 
-    print "mean:", train_rewards.mean(), "std:", train_rewards.std(), "max:", train_rewards.max(), "min:", train_rewards.min(), "mean_loss:", mean_loss, "epsilon:", epsilon
-    print "t:", str(round(train_time, 2)) + "s"
+   # print "mean:", train_rewards.mean(), "std:", train_rewards.std(), "max:", train_rewards.max(), "min:", train_rewards.min(), "mean_loss:", mean_loss, "epsilon:", epsilon
+    #print "t:", str(round(train_time, 2)) + "s"
 
     # Testing
-    test_episode = []
-    test_rewards = []
-    test_start = time()
-    print "Testing..."
-    for test_episode in tqdm(range(test_episodes_per_epoch)):
-        game.new_episode()
-        while not game.is_episode_finished():
-            state = convert(game.get_state().image_buffer).reshape([1, 1, downsampled_y, downsampled_x])
-            best_action_index = get_best_action(state)
+    #test_episode = []
+    #test_rewards = []
+    #test_start = time()
+    #print "Testing..."
+    #for test_episode in tqdm(range(test_episodes_per_epoch)):
+    #    game.new_episode()
+    #    while not game.is_episode_finished():
+    #        state = convert(game.get_state().image_buffer).reshape([1, 1, downsampled_y, downsampled_x])
+    #        best_action_index = get_best_action(state)#
 
-            game.make_action(actions[best_action_index], skiprate + 1)
-        r = game.get_total_reward()
-        test_rewards.append(r)
+#            game.make_action(actions[best_action_index], skiprate + 1)
+#        r = game.get_total_reward()
+#        test_rewards.append(r)
 
-    test_end = time()
-    test_time = test_end - test_start
-    print "Test results:"
-    test_rewards = np.array(test_rewards)
-    print "mean:", test_rewards.mean(), "std:", test_rewards.std(), "max:", test_rewards.max(), "min:", test_rewards.min()
-    print "t:", str(round(test_time, 2)) + "s"
+#    test_end = time()
+#    test_time = test_end - test_start
+#    print "Test results:"
+#    test_rewards = np.array(test_rewards)
+#    print "mean:", test_rewards.mean(), "std:", test_rewards.std(), "max:", test_rewards.max(), "min:", test_rewards.min()
+#    print "t:", str(round(test_time, 2)) + "s"
 
-    if params_savefile:
-        print "Saving network weigths to:", params_savefile
-        pickle.dump(get_all_param_values(net), open(params_savefile, "w"))
-    print "========================="
+#    if params_savefile:
+#        print "Saving network weigths to:", params_savefile
+#        pickle.dump(get_all_param_values(net), open(params_savefile, "w"))
+#    print "========================="
 
 print "Training finished! Time to watch!"
 

@@ -45,8 +45,12 @@ for i in range(episodes):
     print("Episode #" +str(i+1))
 
     game.new_episode()
+	
+    
+	
     while not game.is_episode_finished():
 
+        game.send_game_command("togglemap")
         s = game.get_state()
         img = s.image_buffer
         misc = s.game_variables

@@ -82,7 +82,7 @@ game.set_sound_enabled(True)
 game.set_living_reward(-1)
 
 # Sets ViZDoom mode (PLAYER, ASYNC_PLAYER, SPECTATOR, ASYNC_SPECTATOR, PLAYER mode is default)
-#game.set_mode(Mode.PLAYER)
+game.set_mode(Mode.PLAYER)
 
 # Initialize the game. Further configuration won't take any effect from now on.
 game.init()
@@ -100,7 +100,8 @@ episodes = 10
 # Sets time that will pause the engine after each action.
 # Without this everything would go too fast for you to keep track of what's happening.
 # 0.05 is quite arbitrary, nice to watch with my hardware setup. 
-sleep_time = 0.028
+#sleep_time = 0.028
+sleep_time = 0.0
 
 for i in range(episodes):
     print("Episode #" + str(i+1))
@@ -108,13 +109,23 @@ for i in range(episodes):
     # Starts a new episode. It is not needed right after init() but it doesn't cost much. At least the loop is nicer.
     game.new_episode()
 
+    game.send_game_command("am_backcolor ffffff")
+    game.send_game_command("am_wallcolor 000000")
+    game.send_game_command("togglemap")
+    game.send_game_command("am_showmonsters false")
+    game.send_game_command("am_showsecrets false")
+    game.send_game_command("am_showkeys false")
+    game.send_game_command("am_yourcolor ffffff")
+
+	
     while not game.is_episode_finished():
 
+        
         # Gets the state
         s = game.get_state()
 
         # Makes a random action and get remember reward.
-        r = game.make_action(choice(actions), 1)
+        r = game.make_action(choice(actions))
 
         # Prints state's game variables. Printing the image is quite pointless.
         print("State #" + str(s.number))
