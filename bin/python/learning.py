@@ -167,6 +167,8 @@ net, learn, get_q_values, get_best_action = create_network(len(actions))
 # Loads the  network's parameters if the loadfile was specified
 if params_loadfile is not None:
     params = pickle.load(open(params_loadfile, "r"))
+
+    params = params.astype(np.float32)
     set_all_param_values(net, params)
 
 

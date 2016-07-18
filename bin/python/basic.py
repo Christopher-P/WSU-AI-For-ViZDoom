@@ -22,6 +22,25 @@ from random import choice
 from time import sleep
 from time import time
 
+import cv2
+import threading
+from matplotlib import pyplot as plt
+import numpy as np
+
+
+downsampled_x = 320
+downsampled_y = int(2/3.0*downsampled_x)
+
+def imgThread(  ):
+    while(True):
+        #print "Worked..."
+        img2 = game.get_state().image_buffer
+        print ("worked")
+        img2 = img2[0].astype(np.float32) / 255.0
+        img2 = cv2.resize(img2, (downsampled_x, downsampled_y))
+        cv2.imshow('frame',img2)
+    # Hold so it has time to draw
+        cv2.waitKey(1)
 
 # Create DoomGame instance. It will run the game and communicate with you.
 game = DoomGame()
@@ -95,7 +114,13 @@ actions = [[True,False,False],[False,True,False],[False,False,True]]
 
 # Run this many episodes
 
-episodes = 10
+episodes = 10 
+
+plt.ion()
+
+t = threading.Thread(target=imgThread, args=())
+t.deamon = True
+t.start()
 
 # Sets time that will pause the engine after each action.
 # Without this everything would go too fast for you to keep track of what's happening.
@@ -115,7 +140,7 @@ for i in range(episodes):
     game.send_game_command("am_showmonsters false")
     game.send_game_command("am_showsecrets false")
     game.send_game_command("am_showkeys false")
-    game.send_game_command("am_yourcolor ffffff")
+    game.send_game_command("am_yourcolor 000000")
 
 	
     while not game.is_episode_finished():
