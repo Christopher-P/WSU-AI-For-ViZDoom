@@ -1,50 +1,37 @@
 #!/usr/bin/python
 
+import sys
 import threading
-from time import sleep
-
-from skimage.measure import structural_similarity as ssim
-
 import time
+import csv
+from time import sleep
 
 import cv2
 import imutils
 import numpy as np
 from matplotlib import pyplot as plt
-from vizdoom import *
-
-from pybrain.tools.shortcuts import buildNetwork
 from pybrain.datasets import SupervisedDataSet
 from pybrain.supervised.trainers import BackpropTrainer
-from pybrain.tools.xml.networkwriter import NetworkWriter
+from pybrain.tools.shortcuts import buildNetwork
 from pybrain.tools.xml.networkreader import NetworkReader
+from pybrain.tools.xml.networkwriter import NetworkWriter
+from skimage.measure import compare_ssim as ssim
+from vizdoom import *
 
 # doom stuff
 print "Initializing doom..."
 game = DoomGame()
-game.load_config("../../../examples/config/learning.cfg")
-# Enables freelook in engine
-game.add_game_args("+freelook 1")
-
-game.set_window_visible(True)
-
-game.add_available_button(Button.MOVE_LEFT)
-game.add_available_button(Button.MOVE_RIGHT)
-game.add_available_button(Button.ATTACK)
-
-game.set_mode(Mode.SPECTATOR)
+game.load_config("../../../examples/config/TemplateGen.cfg")
 game.init()
 print "Doom initialized."
 
 template = cv2.imread('HEADA1.png', 0)
+original = template
 template = cv2.Canny(template, 50, 200)
 (tH, tW) = template.shape[:2]
-threshold = 0.2
 plt.ion()
 
 net = buildNetwork(3, 6, game.get_available_buttons_size())
-
-print template.shape[::-1]
 
 image = game.get_game_screen()
 finalImage = image
@@ -56,7 +43,26 @@ avgY = 0.0
 
 ds = SupervisedDataSet(3, game.get_available_buttons_size())
 
-def aiTrain():
+# Output to CSV ------------------------
+
+
+with open(__file__, "wb") as csv_file:
+    writer = csv.writer(csv_file, delimiter=',')
+        #for line in data:
+         #   writer.writerow(line)
+
+data = ["first_name,last_name,city".split(","),
+
+            "Tyrese,Hirthe,Strackeport".split(","),
+
+            "Jules,Dicki,Lake Nickolasville".split(","),
+
+            "Dedric,Medhurst,Stiedemannberg".split(",")
+
+            ]
+writer.writerow([10, 10, 0, 10, 10])
+
+def ai_train():
     global detected
     global avgX
     global avgY
@@ -64,25 +70,26 @@ def aiTrain():
     while training:
         if np.count_nonzero(game.get_last_action()) > 0:
             ds.addSample((detected, avgX, avgY), game.get_last_action())
-            print "Trained!"
-            print avgX
-            print avgY
+            #print "Trained!"
+            #print avgX
+            #print avgY
         sleep(0.1)
 
+def call_detect():
+    global finalImage
+    global avgX
+    global avgY
+    global detected
 
-def callDetect():
-    #temp = cv2.imread('HEADA1.png',0)
+    h, w = template.shape
+
     while True:
-        global image
-        global avgX
-        global avgY
+        #start = time.time()
         clone = image
-        lastScale = 0.0
-        #image = game.get_game_screen()
         gray = cv2.cvtColor(clone, cv2.COLOR_BGR2GRAY)
         found = None
         # loop over the scales of the image
-        for scale in np.linspace(0.2, 2.4, 10)[::-1]:
+        for scale in np.linspace(2.4, 0.2, 10)[::-1]:
             # resize the image according to the scale, and keep track
             # of the ratio of the resizing
             resized = imutils.resize(gray, width=int(gray.shape[1] * scale))
@@ -91,8 +98,9 @@ def callDetect():
             # from the loop
             if resized.shape[0] < tH or resized.shape[1] < tW:
                 break
-                # detect edges in the resized, grayscale image and apply template
+            # detect edges in the resized, grayscale image and apply template
             # matching to find the template in the image
+
             edged = cv2.Canny(resized, 50, 200)
             result = cv2.matchTemplate(edged, template, cv2.TM_CCOEFF)
             (_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
@@ -101,52 +109,49 @@ def callDetect():
             # the bookkeeping variable
             if found is None or maxVal > found[0]:
                 found = (maxVal, maxLoc, r)
-                lastScale = scale
+
+                (startX, startY) = (int(maxLoc[0] * r), int(maxLoc[1] * r))
+                (endX, endY) = (int((maxLoc[0] + tW) * r), int((maxLoc[1] + tH) * r))
+
+                resized = gray[startY:endY, startX:endX]
+
+                resized = cv2.resize(resized, (w, h))
+
+                if ssim(original, resized) > 0.2:
+                    break
 
         # unpack the bookkeeping varaible and compute the (x, y) coordinates
         # of the bounding box based on the resized ratio
-
 
         (_, maxLoc, r) = found
         (startX, startY) = (int(maxLoc[0] * r), int(maxLoc[1] * r))
         (endX, endY) = (int((maxLoc[0] + tW) * r), int((maxLoc[1] + tH) * r))
 
-        # draw a bounding box around the detected result and display the image
-        cv2.rectangle(clone, (startX, startY), (endX, endY), (0, 0, 255), 2)
-
-        global finalImage
-        finalImage = clone
-
-        avgX = (startX + endX) / 2
-        avgY = (startY + endY) / 2
-
-
         resized = gray[startY:endY, startX:endX]
-        #resized = imutils.resize(resized, width=int(gray.shape[1] * lastScale))
-        print template.shape
-        print resized.shape
-        cv2.imshow('temp', template)
-        cv2.waitKey(1)
-        cv2.imshow('res', resized)
-        cv2.waitKey(1)
-        sleep(4)
 
-       # s = ssim(template, resized)
-       # print s
-for i in range (0, 1):
-    t = threading.Thread(target=callDetect, args=())
-    t.start()
+        resized = cv2.resize(resized, (w, h))
+        if ssim(original, resized) > 0.2:
+            # draw a bounding box around the detected result and display the image
+            cv2.rectangle(clone, (startX, startY), (endX, endY), (0, 0, 255), 2)
+            finalImage = clone
+            avgX = (startX + endX) / 2
+            avgY = (startY + endY) / 2
+            detected = True
+        else:
+            detected = False
 
-l = threading.Thread(target=aiTrain, args=())
+        #print '\r',  # print is Ok, and comma is needed.
+        #print "Running at: ", 1 / (time.time() - start), " FPS!",
+        #sys.stdout.flush()  # flush is needed.
+
+t = threading.Thread(target=call_detect, args=())
+t.start()
+
+l = threading.Thread(target=ai_train, args=())
 l.start()
 
-
-
-ScreenWidth = game.get_screen_width()
-ScreenHeight = game.get_screen_height()
 action = [False, False, False]
 actions = [[True, False, False], [False, True, False], [False, False, True]]
-# sleep_time = 0.028
 sleep_time = 0.028
 
 episodes = 60
